@@ -1,0 +1,304 @@
+ServerModule:
+  Name: frs021_rpg_API
+  Target Platform: Windows/IBM i/Linux
+  Multilingual Details:
+    - ENG:
+        Description: "AIRLINE"
+    - FRA:
+        Description: "AIRLINE"
+  Source: |
+    Begin_Com Role(*EXTENDS #PRIM_SRVM)
+
+    * ============================================ API SUMMARY ==============================
+    *
+    * Path     : /api/v1/frs021/AIRLINE
+    * Operation: CreateAIRLINE
+    *
+    * Request
+    *    Parameter: None
+    *    Schema   : AIRLINEObject
+    *
+    * Response
+    *    Schema   : AIRLINEObject
+    *
+    * Action  : Insert details into table FLIGHTSZ
+    *
+    * =======================================================================================
+    Srvroutine Name(CreateAIRLINE) Response(*HTTP #Context)
+    * Instance of the CreateAIRLINE operation
+    Define_Com Class(#Com_Home.CreateAIRLINE) Name(#Operation)
+    * Instance of the AIRLINEObject component used by Operation CreateAIRLINE
+    Define_Com Class(#Com_Home.AIRLINEObject) Name(#AIRLINEObject)
+
+    If (#Operation.TryBind( #Context ))
+    Get Com(#Operation.Request.ContentJson) Com_Fields(#AIRLINEObject)
+
+    Begincheck
+    Insert Fields(#AIRLINEObject) To_File(FLIGHTSZ) Io_Status(#io$sts) Io_Error(*NEXT) Val_Error(*NEXT) Check_Only(*YES)
+    If_Status Is_Not(*OKAY)
+    Message Msgtxt("AIRLINE includes invalid data")
+    Endif
+    Endcheck If_Error(*RETURN400)
+
+    Insert Fields(#AIRLINEObject) To_File(FLIGHTSZ) Io_Status(#io$sts) Io_Error(*NEXT) Val_Error(*NEXT)
+    If (#Operation.CheckIoStatus( #io$sts ))
+    Set Com(#AIRLINEObject) Com_Fields(*ALL)
+    #Operation.Response.SetContentJson( #AIRLINEObject )
+    Endif
+    Else
+    * Bad Response automatically handled by LANSA
+    Endif
+    Endroutine
+
+    * ============================================ API SUMMARY ==============================
+    *
+    * Path     : /api/v1/frs021/AIRLINE/{FFLGHT}
+    * Operation: DeleteAIRLINE
+    *
+    * Request
+    *    Parameter: FFLGHT in Path
+    *    Schema   : None
+    *
+    * Response
+    *    Schema   : None
+    *
+    * Action  : Delete AIRLINE with key FFLGHT from table FLIGHTSZ
+    *
+    * =======================================================================================
+    Srvroutine Name(DeleteAIRLINE) Response(*HTTP #Context)
+    * Instance of the DeleteAIRLINE operation
+    Define_Com Class(#Com_Home.DeleteAIRLINE) Name(#Operation)
+
+    If (#Operation.TryBind( #Context ))
+    Begincheck
+    Filecheck Field(#FFLGHT) Using_File(FLIGHTSZ) Using_Key(#Operation.Request.FFLGHT) Msgtxt("AIRLINE with key " + #Operation.Request.FFLGHT.AsString + " not found.")
+    Endcheck If_Error(*RETURN404)
+
+    Delete From_File(FLIGHTSZ) With_Key(#Operation.Request.FFLGHT) Io_Status(#io$sts) Io_Error(*NEXT) Val_Error(*NEXT)
+    If (#Operation.CheckIoStatus( #io$sts ))
+    #Operation.Response.Set204
+    Else
+    * Bad response automatically handled by LANSA
+    Endif
+    Else
+    * Bad response automatically handled by LANSA
+    Endif
+    Endroutine
+
+    End_Com
+  API Definition:
+    Language Handling: NoAction
+    Partition Handling: PathVariable
+    Publish as Swagger V2: Yes
+    Publish as OpenAPI V3: Yes
+    ServicePath: /api/v1/frs021
+    Info:
+      Title: Publish AIRLINE Web Services using LANSA REST API
+      Description: Publish AIRLINE Web Services using LANSA REST API
+      Terms of Service: Provided “AS-IS”. No warranty or indemnification of any kind is implied.
+    Paths:
+      - /AIRLINE:
+          Operations:
+            - CreateAIRLINE:
+                Verb: Post
+                Server Routine: CreateAIRLINE
+                Deprecated: No
+                Request:
+                  Required: Yes
+                  Media Types:
+                    - application/json:
+                        Media Type Id: ContentJson
+                        Schema Object:
+                          Type: Reference
+                          Reference Name: AIRLINEObject
+                          Format: Unspecified
+                          Required: No
+                          Nullable: No
+                          ReadOnly: No
+                          WriteOnly: No
+                Responses:
+                  - OK:
+                      Status Code: 201
+                      Media Types:
+                        - application/json:
+                            Media Type Id: ContentJson
+                            Schema Object:
+                              Type: Reference
+                              Reference Name: AIRLINEObject
+                              Format: Unspecified
+                              Required: No
+                              Nullable: No
+                              ReadOnly: No
+                              WriteOnly: No
+      - /AIRLINE/{FFLGHT}:
+          Parameters:
+            - FFLGHT:
+                Description: Flight identifier
+                Location: Path
+                Style: Default
+                Required: Yes
+                Explode: No
+                Deprecated: No
+                Allow Reserved: No
+                Allow Empty Value: No
+                Schema Object:
+                  Description: Flight identifier
+                  Type: Field
+                  Field Name: FFLGHT
+                  Format: Unspecified
+                  Required: No
+                  Nullable: No
+                  ReadOnly: No
+                  WriteOnly: No
+          Operations:
+            - DeleteAIRLINE:
+                Verb: Delete
+                Server Routine: DeleteAIRLINE
+                Deprecated: No
+                Request:
+                  Required: No
+                Responses:
+                  - OK:
+                      Status Code: 204
+      - /AIRLINE/Status:
+          Operations:
+            - Status:
+                Verb: Get
+                Server Routine: Status
+                Deprecated: No
+                Request:
+                  Required: No
+                Responses:
+                  - OK:
+                      Status Code: 200
+                      Media Types:
+                        - text/plain:
+                            Media Type Id: ContentString
+                            Schema Object:
+                              Description: String
+                              Type: String
+                              Format: Unspecified
+                              Required: No
+                              Nullable: No
+                              ReadOnly: No
+                              WriteOnly: No
+    Components:
+      Schema:
+        Types:
+          - AIRLINEObject:
+              Description: AIRLINE Data Type
+              Type: Object
+              Format: Unspecified
+              Required: No
+              Nullable: No
+              ReadOnly: No
+              WriteOnly: No
+              Properties:
+                - FFLGHT:
+                    Description: FFLGHT
+                    Type: Field
+                    Field Name: FFLGHT
+                    Format: Unspecified
+                    Required: Yes
+                    Nullable: No
+                    ReadOnly: No
+                    WriteOnly: No
+                - FDPCIN:
+                    Description: FDPCIN
+                    Type: Field
+                    Field Name: FDPCIN
+                    Format: Unspecified
+                    Required: No
+                    Nullable: No
+                    ReadOnly: No
+                    WriteOnly: No
+                - FDPCNM:
+                    Description: FDPCNM
+                    Type: Field
+                    Field Name: FDPCNM
+                    Format: Unspecified
+                    Required: No
+                    Nullable: No
+                    ReadOnly: No
+                    WriteOnly: No
+                - FDYOWK:
+                    Description: FDYOWK
+                    Type: Field
+                    Field Name: FDYOWK
+                    Format: Unspecified
+                    Required: No
+                    Nullable: No
+                    ReadOnly: No
+                    WriteOnly: No
+                - FARCIN:
+                    Description: FARCIN
+                    Type: Field
+                    Field Name: FARCIN
+                    Format: Unspecified
+                    Required: No
+                    Nullable: No
+                    ReadOnly: No
+                    WriteOnly: No
+                - FARCNM:
+                    Description: FARCNM
+                    Type: Field
+                    Field Name: FARCNM
+                    Format: Unspecified
+                    Required: No
+                    Nullable: No
+                    ReadOnly: No
+                    WriteOnly: No
+                - FDPTTM:
+                    Description: FDPTTM
+                    Type: Field
+                    Field Name: FDPTTM
+                    Format: Unspecified
+                    Required: No
+                    Nullable: No
+                    ReadOnly: No
+                    WriteOnly: No
+                - FARVTM:
+                    Description: FARVTM
+                    Type: Field
+                    Field Name: FARVTM
+                    Format: Unspecified
+                    Required: No
+                    Nullable: No
+                    ReadOnly: No
+                    WriteOnly: No
+                - FAIRLN:
+                    Description: FAIRLN
+                    Type: Field
+                    Field Name: FAIRLN
+                    Format: Unspecified
+                    Required: No
+                    Nullable: No
+                    ReadOnly: No
+                    WriteOnly: No
+                - FSEATS:
+                    Description: FSEATS
+                    Type: Field
+                    Field Name: FSEATS
+                    Format: Unspecified
+                    Required: No
+                    Nullable: No
+                    ReadOnly: No
+                    WriteOnly: No
+                - FTCKTP:
+                    Description: FTCKTP
+                    Type: Field
+                    Field Name: FTCKTP
+                    Format: Unspecified
+                    Required: No
+                    Nullable: No
+                    ReadOnly: No
+                    WriteOnly: No
+                - FMILES:
+                    Description: FMILES
+                    Type: Field
+                    Field Name: FMILES
+                    Format: Unspecified
+                    Required: No
+                    Nullable: No
+                    ReadOnly: No
+                    WriteOnly: No
